@@ -1,6 +1,6 @@
 
 /*
-- ***LittleFS library conflicts with DebugMode. Result to ezLED and Button2 Libraries are not working.
+Improtant: You must to erase flash before uploade the sketch.
 */
 
 #include <Arduino.h>
@@ -16,14 +16,14 @@
 //******************************** Configulation ****************************//
 #define FORMAT_LITTLEFS_IF_FAILED true
 
-#define _DEBUG_
+#define _DEBUG_  // Comment this line if you don't want to debug
 
 //******************************** Variables & Objects **********************//
 #define deviceName "MyESP32"
 
 const char* filename = "/config.txt";  // Config file name
 
-bool storedValues;
+bool mqttParameter;
 
 //----------------- esLED ---------------------//
 #define led LED_BUILTIN
@@ -84,25 +84,121 @@ void loadConfiguration(fs::FS& fs, const char* filename) {
     strlcpy(mqttPort, doc["mqttPort"], sizeof(mqttPort));
     strlcpy(mqttUser, doc["mqttUser"], sizeof(mqttUser));
     strlcpy(mqttPass, doc["mqttPass"], sizeof(mqttPass));
-    storedValues = doc["storedValues"];
+    mqttParameter = doc["mqttParameter"];
 
     file.close();
 }
 
-// Saves the configuration to a file
-void saveConfiguration(fs::FS& fs, const char* filename) {
+void handleMqttMessage(char* topic, byte* payload, unsigned int length) {
+    String message;
+    for (int i = 0; i < length; i++) {
+        message += (char)payload[i];
+    }
+
+    if (String(topic) == "test/subscribe/topic") {
+        if (message == "aValue") {
+            // Do something
+        } else if (message == "otherValue") {
+            // Do something
+        }
+    }
+}
+
+void mqttInit() {
+#ifdef _DEBUG_
+    Serial.print(F("MQTT parameters are "));
+#endif
+    if (mqttParameter) {
+#ifdef _DEBUG_
+        Serial.println(F(" available"));
+#endif
+        mqtt.setCallback(handleMqttMessage);
+        mqtt.setServer(mqttBroker, atoi(mqttPort));
+        tConnectMqtt.start();
+    } else {
+#ifdef _DEBUG_
+        Serial.println(F(" not available."));
+#endif
+    }
+}
+
+// // Saves the configuration to a file
+// void saveConfiguration(fs::FS& fs, const char* filename) {
+//     strcpy(mqttBroker, customMqttBroker.getValue());
+//     strcpy(mqttPort, customMqttPort.getValue());
+//     strcpy(mqttUser, customMqttUser.getValue());
+//     strcpy(mqttPass, customMqttPass.getValue());
+// #ifdef _DEBUG_
+//     Serial.println(F("The values are updated."));
+// #endif
+
+//     // Delete existing file, otherwise the configuration is appended to the file
+//     // fs.remove(filename);
+
+//     File file = fs.open(filename, "w");
+//     if (!file) {
+// #ifdef _DEBUG_
+//         Serial.println(F("Failed to open config file for writing"));
+// #endif
+//         return;
+//     }
+
+//     // Allocate a temporary JsonDocument
+//     JsonDocument doc;
+//     // Set the values in the document
+//     doc["mqttBroker"]    = mqttBroker;
+//     doc["mqttPort"]      = mqttPort;
+//     doc["mqttUser"]      = mqttUser;
+//     doc["mqttPass"]      = mqttPass;
+//     doc["mqttParameter"] = true;
+// #ifdef _DEBUG_
+//     Serial.print(F("The configuration has been saved to "));
+//     Serial.println(filename);
+// #endif
+
+//     // Serialize JSON to file
+//     if (serializeJson(doc, file) == 0) {
+// #ifdef _DEBUG_
+//         Serial.println(F("Failed to write to file"));
+// #endif
+//     }
+
+//     file.close();  // Close the file
+// #ifdef _DEBUG_
+//     Serial.println(F("Configuration saved"));
+// #endif
+
+//     if (mqttParameter) {
+// #ifdef _DEBUG_
+//         Serial.print(F("Setting MQTT Broker: "));
+//         Serial.println(mqttBroker);
+// #endif
+//         mqtt.setCallback(handleMqttMessage);
+//         mqtt.setServer(mqttBroker, atoi(mqttPort));
+//         tConnectMqtt.start();
+//     } else {
+// #ifdef _DEBUG_
+//         Serial.println(F("MQTT parameters is not availible."));
+// #endif
+//     }
+// }
+
+// void saveParamsCallback() { saveConfiguration(LittleFS, filename); }
+
+void saveParamsCallback() {
+    // saveConfiguration(LittleFS, filename);
     strcpy(mqttBroker, customMqttBroker.getValue());
     strcpy(mqttPort, customMqttPort.getValue());
     strcpy(mqttUser, customMqttUser.getValue());
     strcpy(mqttPass, customMqttPass.getValue());
 #ifdef _DEBUG_
-    Serial.println(F("The values updated."));
+    Serial.println(F("The values are updated."));
 #endif
 
     // Delete existing file, otherwise the configuration is appended to the file
-    // fs.remove(filename);
+    // LittleFS.remove(filename);
 
-    File file = fs.open(filename, "w");
+    File file = LittleFS.open(filename, "w");
     if (!file) {
 #ifdef _DEBUG_
         Serial.println(F("Failed to open config file for writing"));
@@ -113,15 +209,19 @@ void saveConfiguration(fs::FS& fs, const char* filename) {
     // Allocate a temporary JsonDocument
     JsonDocument doc;
     // Set the values in the document
-    doc["mqttBroker"]   = mqttBroker;
-    doc["mqttPort"]     = mqttPort;
-    doc["mqttUser"]     = mqttUser;
-    doc["mqttPass"]     = mqttPass;
-    doc["storedValues"] = true;
+    doc["mqttBroker"] = mqttBroker;
+    doc["mqttPort"]   = mqttPort;
+    doc["mqttUser"]   = mqttUser;
+    doc["mqttPass"]   = mqttPass;
 #ifdef _DEBUG_
     Serial.print(F("The configuration has been saved to "));
     Serial.println(filename);
 #endif
+
+    if (doc["mqttBroker"] != "") {
+        doc["mqttParameter"] = true;
+        mqttParameter        = doc["mqttParameter"];
+    }
 
     // Serialize JSON to file
     if (serializeJson(doc, file) == 0) {
@@ -135,15 +235,21 @@ void saveConfiguration(fs::FS& fs, const char* filename) {
     Serial.println(F("Configuration saved"));
 #endif
 
-    mqtt.setServer(mqttBroker, atoi(mqttPort));
-#ifdef _DEBUG_
-    Serial.print(F("set MQTT Broker: "));
-    Serial.println(mqttBroker);
-#endif
-    tConnectMqtt.start();
+    //     if (mqttParameter) {
+    // #ifdef _DEBUG_
+    //         Serial.print(F("Setting MQTT Broker: "));
+    //         Serial.println(mqttBroker);
+    // #endif
+    //         mqtt.setCallback(handleMqttMessage);
+    //         mqtt.setServer(mqttBroker, atoi(mqttPort));
+    //         tConnectMqtt.start();
+    //     } else {
+    // #ifdef _DEBUG_
+    //         Serial.println(F("MQTT parameters is not availible."));
+    // #endif
+    //     }
+    mqttInit();
 }
-
-void saveParamsCallback() { saveConfiguration(LittleFS, filename); }
 
 // Prints the content of a file to the Serial
 void printFile(fs::FS& fs, const char* filename) {
@@ -208,27 +314,12 @@ void wifiManagerSetup() {
 
     if (wifiManager.autoConnect(deviceName, "password")) {
 #ifdef _DEBUG_
-        Serial.println(F("connected...yeey :)"));
+        Serial.println(F("WiFI is connected :)"));
 #endif
     } else {
 #ifdef _DEBUG_
         Serial.println(F("Configportal running"));
 #endif
-    }
-}
-
-void handleMqttMessage(char* topic, byte* payload, unsigned int length) {
-    String message;
-    for (int i = 0; i < length; i++) {
-        message += (char)payload[i];
-    }
-
-    if (String(topic) == "test/subscribe/topic") {
-        if (message == "aValue") {
-            // Do something
-        } else if (message == "otherValue") {
-            // Do something
-        }
     }
 }
 
@@ -255,7 +346,7 @@ void reconnectMqtt() {
         if (mqtt.connect(deviceName, mqttUser, mqttPass)) {
             tReconnectMqtt.stop();
 #ifdef _DEBUG_
-            Serial.println(F("connected"));
+            Serial.println(F("Connected"));
 #endif
             tConnectMqtt.interval(0);
             tConnectMqtt.start();
@@ -272,7 +363,6 @@ void reconnectMqtt() {
             if (tReconnectMqtt.counter() >= 3) {
                 // ESP.restart();
                 tReconnectMqtt.stop();
-                // tConnectMqtt.interval(3600 * 1000);  // Wait 1 hour before reconnecting.
                 tConnectMqtt.interval(60 * 1000);  // Wait 1 minute before reconnecting.
                 tConnectMqtt.resume();
             }
@@ -309,6 +399,7 @@ void resetWifiBtPressed(Button2& btn) {
 #endif
     ESP.restart();
 }
+
 //********************************  Setup ***********************************//
 void setup() {
     statusLed.turnOFF();
@@ -316,8 +407,8 @@ void setup() {
     resetWifiBt.setLongClickTime(5000);
     resetWifiBt.setLongClickDetectedHandler(resetWifiBtPressed);
     Serial.begin(115200);
-    while (!Serial)
-        continue;
+    // while (!Serial)
+    //     continue;
     // Initialize LittleFS library
     while (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
 #ifdef _DEBUG_
@@ -327,12 +418,13 @@ void setup() {
     }
 
     wifiManagerSetup();
-    mqtt.setCallback(handleMqttMessage);
 
-    if (storedValues) {
-        mqtt.setServer(mqttBroker, atoi(mqttPort));
-        tConnectMqtt.start();
-    }
+    // if (mqttParameter) {
+    //     mqtt.setCallback(handleMqttMessage);
+    //     mqtt.setServer(mqttBroker, atoi(mqttPort));
+    //     tConnectMqtt.start();
+    // }
+    mqttInit();
 }
 
 //********************************  Loop ************************************//
