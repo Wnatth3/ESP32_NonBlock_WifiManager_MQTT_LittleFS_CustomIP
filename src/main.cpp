@@ -5,13 +5,13 @@ Improtant: You must to erase flash before uploade the sketch.
 
 #include <Arduino.h>
 #include <FS.h>
+#include <WiFiManager.h>  // https://github.com/tzapu/WiFiManager
 #include <LittleFS.h>
 #include <ArduinoJson.h>
-#include <WiFiManager.h>
 #include <PubSubClient.h>
-#include <TickTwo.h>
-#include <ezLED.h>
 #include <Button2.h>
+#include <ezLED.h>
+#include <TickTwo.h>
 
 //******************************** Configulation ****************************//
 #define FORMAT_LITTLEFS_IF_FAILED true
@@ -288,7 +288,7 @@ void reconnectMqtt() {
                 // ESP.restart();
                 tReconnectMqtt.stop();
                 tConnectMqtt.interval(60 * 1000);  // Wait 1 minute before reconnecting.
-                tConnectMqtt.resume();
+                tConnectMqtt.start();
             }
         }
     } else {
@@ -302,7 +302,7 @@ void reconnectMqtt() {
 
 void connectMqtt() {
     if (!mqtt.connected()) {
-        tConnectMqtt.pause();
+        tConnectMqtt.stop();
         tReconnectMqtt.start();
     } else {
         mqtt.loop();
@@ -322,6 +322,7 @@ void resetWifiBtPressed(Button2& btn) {
     Serial.println(F(" is restarting."));
 #endif
     ESP.restart();
+    delay(3000);
 }
 
 //********************************  Setup ***********************************//
