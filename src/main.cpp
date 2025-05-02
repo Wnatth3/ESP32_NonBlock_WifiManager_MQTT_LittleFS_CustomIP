@@ -34,6 +34,12 @@ ezLED statusLed(led);
 Button2 resetWifiBt;
 
 //----------------- WiFi Manager --------------//
+// default custom static IP
+char static_ip[16]  = "192.168.0.191";
+char static_gw[16]  = "192.168.0.1";
+char static_sn[16]  = "255.255.255.0";
+char static_dns[16] = "1.1.1.1";
+// MQTT parameters
 char mqttBroker[16] = "192.168.0.10";
 char mqttPort[6]    = "1883";
 char mqttUser[10];
@@ -85,6 +91,17 @@ void loadConfiguration(fs::FS& fs, const char* filename) {
     strlcpy(mqttUser, doc["mqttUser"], sizeof(mqttUser));
     strlcpy(mqttPass, doc["mqttPass"], sizeof(mqttPass));
     mqttParameter = doc["mqttParameter"];
+
+    if (doc["ip"]) {
+        strlcpy(static_ip, doc["ip"], sizeof(static_ip));
+        strlcpy(static_gw, doc["gateway"], sizeof(static_gw));
+        strlcpy(static_sn, doc["subnet"], sizeof(static_sn));
+        strlcpy(static_dns, doc["dns"], sizeof(static_dns));
+    } else {
+#ifdef _DEBUG_
+        Serial.println(F("No custom IP in config file"));
+#endif
+    }
 
     file.close();
 }
@@ -150,10 +167,11 @@ void saveParamsCallback() {
     doc["mqttPort"]   = mqttPort;
     doc["mqttUser"]   = mqttUser;
     doc["mqttPass"]   = mqttPass;
-#ifdef _DEBUG_
-    Serial.print(F("The configuration has been saved to "));
-    Serial.println(filename);
-#endif
+
+    doc["ip"]      = WiFi.localIP().toString();
+    doc["gateway"] = WiFi.gatewayIP().toString();
+    doc["subnet"]  = WiFi.subnetMask().toString();
+    doc["dns"]     = WiFi.dnsIP().toString();
 
     if (doc["mqttBroker"] != "") {
         doc["mqttParameter"] = true;
@@ -165,12 +183,14 @@ void saveParamsCallback() {
 #ifdef _DEBUG_
         Serial.println(F("Failed to write to file"));
 #endif
+    } else {
+#ifdef _DEBUG_
+        Serial.print(F("The configuration has been saved to "));
+        Serial.println(filename);
+#endif
     }
 
     file.close();  // Close the file
-#ifdef _DEBUG_
-    Serial.println(F("Configuration saved"));
-#endif
 
     mqttInit();
 }
@@ -188,7 +208,9 @@ void printFile(fs::FS& fs, const char* filename) {
 
     // Extract each characters by one by one
     while (file.available()) {
+#ifdef _DEBUG_
         Serial.print((char)file.read());
+#endif
     }
     Serial.println();
 
@@ -218,6 +240,14 @@ void wifiManagerSetup() {
 #endif
     loadConfiguration(LittleFS, filename);
 
+    // set static ip
+    IPAddress _ip, _gw, _sn, _dns;
+    _ip.fromString(static_ip);
+    _gw.fromString(static_gw);
+    _sn.fromString(static_sn);
+    _dns.fromString(static_dns);
+    wifiManager.setSTAStaticIPConfig(_ip, _gw, _sn, _dns);
+
     // add all your parameters here
     wifiManager.addParameter(&customMqttBroker);
     wifiManager.addParameter(&customMqttPort);
@@ -238,7 +268,7 @@ void wifiManagerSetup() {
 
     if (wifiManager.autoConnect(deviceName, "password")) {
 #ifdef _DEBUG_
-        Serial.println(F("WiFI is connected :)"));
+        Serial.println(F("WiFI is connected :D"));
 #endif
     } else {
 #ifdef _DEBUG_
@@ -285,7 +315,6 @@ void reconnectMqtt() {
             Serial.println(tReconnectMqtt.counter());
 #endif
             if (tReconnectMqtt.counter() >= 3) {
-                // ESP.restart();
                 tReconnectMqtt.stop();
                 tConnectMqtt.interval(60 * 1000);  // Wait 1 minute before reconnecting.
                 tConnectMqtt.start();
