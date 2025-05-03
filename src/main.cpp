@@ -4,9 +4,9 @@ Improtant: You must to erase flash before uploade the sketch.
 */
 
 #include <Arduino.h>
+#include <LittleFS.h>
 #include <FS.h>
 #include <WiFiManager.h>  // https://github.com/tzapu/WiFiManager
-#include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
 #include <Button2.h>
@@ -44,6 +44,8 @@ char mqttBroker[16] = "192.168.0.10";
 char mqttPort[6]    = "1883";
 char mqttUser[10];
 char mqttPass[10];
+
+bool shouldSaveConfig = false;
 
 WiFiManager wifiManager;
 
@@ -139,61 +141,11 @@ void mqttInit() {
     }
 }
 
-void saveParamsCallback() {
-    // saveConfiguration(LittleFS, filename);
-    strcpy(mqttBroker, customMqttBroker.getValue());
-    strcpy(mqttPort, customMqttPort.getValue());
-    strcpy(mqttUser, customMqttUser.getValue());
-    strcpy(mqttPass, customMqttPass.getValue());
-#ifdef _DEBUG_
-    Serial.println(F("The values are updated."));
-#endif
-
-    // Delete existing file, otherwise the configuration is appended to the file
-    // LittleFS.remove(filename);
-
-    File file = LittleFS.open(filename, "w");
-    if (!file) {
-#ifdef _DEBUG_
-        Serial.println(F("Failed to open config file for writing"));
-#endif
-        return;
-    }
-
-    // Allocate a temporary JsonDocument
-    JsonDocument doc;
-    // Set the values in the document
-    doc["mqttBroker"] = mqttBroker;
-    doc["mqttPort"]   = mqttPort;
-    doc["mqttUser"]   = mqttUser;
-    doc["mqttPass"]   = mqttPass;
-
-    doc["ip"]      = WiFi.localIP().toString();
-    doc["gateway"] = WiFi.gatewayIP().toString();
-    doc["subnet"]  = WiFi.subnetMask().toString();
-    doc["dns"]     = WiFi.dnsIP().toString();
-
-    if (doc["mqttBroker"] != "") {
-        doc["mqttParameter"] = true;
-        mqttParameter        = doc["mqttParameter"];
-    }
-
-    // Serialize JSON to file
-    if (serializeJson(doc, file) == 0) {
-#ifdef _DEBUG_
-        Serial.println(F("Failed to write to file"));
-#endif
-    } else {
-#ifdef _DEBUG_
-        Serial.print(F("The configuration has been saved to "));
-        Serial.println(filename);
-#endif
-    }
-
-    file.close();  // Close the file
-
-    mqttInit();
+void saveConfigCallback() {
+    Serial.println("Should save config");
+    shouldSaveConfig = true;
 }
+
 
 // Prints the content of a file to the Serial
 void printFile(fs::FS& fs, const char* filename) {
@@ -256,11 +208,11 @@ void wifiManagerSetup() {
 
     wifiManager.setDarkMode(true);
     // wifiManager.setConfigPortalTimeout(60);
-    wifiManager.setConfigPortalBlocking(false);
+    // wifiManager.setConfigPortalBlocking(false);
 #ifdef _DEBUG_
     Serial.println(F("Saving configuration..."));
 #endif
-    wifiManager.setSaveParamsCallback(saveParamsCallback);
+    wifiManager.setSaveParamsCallback(saveConfigCallback);
 #ifdef _DEBUG_
     Serial.println(F("Print config file..."));
 #endif
@@ -270,25 +222,102 @@ void wifiManagerSetup() {
 #ifdef _DEBUG_
         Serial.println(F("WiFI is connected :D"));
 #endif
+
     } else {
 #ifdef _DEBUG_
         Serial.println(F("Configportal running"));
 #endif
     }
+
+    if (shouldSaveConfig) {
+        Serial.println(F("at saveParamsCallback()"));
+        // saveConfiguration(LittleFS, filename);
+        strcpy(mqttBroker, customMqttBroker.getValue());
+        strcpy(mqttPort, customMqttPort.getValue());
+        strcpy(mqttUser, customMqttUser.getValue());
+        strcpy(mqttPass, customMqttPass.getValue());
+
+        // Serial.print(F("ip: "));
+        // Serial.print(WiFi.localIP().toString());
+        // Serial.print(F(" | gw: "));
+        // Serial.print(WiFi.gatewayIP().toString());
+        // Serial.print(F(" | sn: "));
+        // Serial.print(WiFi.subnetMask().toString());
+        // Serial.print(F(" | dns: "));
+        // Serial.println(WiFi.dnsIP().toString());
+
+#ifdef _DEBUG_
+        Serial.println(F("The values are updated."));
+#endif
+
+        // Delete existing file, otherwise the configuration is appended to the file
+        // LittleFS.remove(filename);
+        File file = LittleFS.open(filename, "w");
+        if (!file) {
+#ifdef _DEBUG_
+            Serial.println(F("Failed to open config file for writing"));
+#endif
+            return;
+        }
+
+        // Allocate a temporary JsonDocument
+        JsonDocument doc;
+        // Set the values in the document
+        doc["mqttBroker"] = mqttBroker;
+        doc["mqttPort"]   = mqttPort;
+        doc["mqttUser"]   = mqttUser;
+        doc["mqttPass"]   = mqttPass;
+
+        doc["ip"]      = WiFi.localIP().toString();
+        doc["gateway"] = WiFi.gatewayIP().toString();
+        doc["subnet"]  = WiFi.subnetMask().toString();
+        doc["dns"]     = WiFi.dnsIP().toString();
+
+        if (doc["mqttBroker"] != "") {
+            doc["mqttParameter"] = true;
+            mqttParameter        = doc["mqttParameter"];
+        }
+
+        // Serial.print(F("ip: "));
+        // Serial.print(WiFi.localIP());
+        // Serial.print(F(" | gw: "));
+        // Serial.print(WiFi.gatewayIP());
+        // Serial.print(F(" | sn: "));
+        // Serial.print(WiFi.subnetMask());
+        // Serial.print(F(" | dns: "));
+        // Serial.println(WiFi.dnsIP());
+
+        // Serialize JSON to file
+        if (serializeJson(doc, file) == 0) {
+#ifdef _DEBUG_
+            Serial.println(F("Failed to write to file"));
+#endif
+        } else {
+#ifdef _DEBUG_
+            Serial.print(F("The configuration has been saved to "));
+            Serial.println(filename);
+#endif
+        }
+
+        file.close();  // Close the file
+
+        // mqttInit();
+    }
+    
 }
 
 void subscribeMqtt() {
 #ifdef _DEBUG_
     Serial.println(F("Subscribing to the MQTT topics..."));
 #endif
-    mqtt.subscribe("test/subscribe/topic");
+    // mqtt.subscribe("test/subscribe/topic");
 }
 
 void publishMqtt() {
 #ifdef _DEBUG_
     Serial.println(F("Publishing to the MQTT topics..."));
 #endif
-    mqtt.publish("test/publish/topic", "Hello World!");
+    // mqtt.publish("test/publish/topic", "Hello World!");
 }
 
 //----------------- Connect MQTT --------------//
@@ -356,11 +385,11 @@ void resetWifiBtPressed(Button2& btn) {
 
 //********************************  Setup ***********************************//
 void setup() {
+    Serial.begin(115200);
     statusLed.turnOFF();
     resetWifiBt.begin(resetWifiBtPin);
     resetWifiBt.setLongClickTime(5000);
     resetWifiBt.setLongClickDetectedHandler(resetWifiBtPressed);
-    Serial.begin(115200);
     // while (!Serial)
     //     continue;
     // Initialize LittleFS library
@@ -379,7 +408,7 @@ void setup() {
 void loop() {
     statusLed.loop();
     resetWifiBt.loop();
-    wifiManager.process();
+    // wifiManager.process();
     tConnectMqtt.update();
     tReconnectMqtt.update();
 }
