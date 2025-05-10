@@ -1,8 +1,3 @@
-
-/*
-
-*/
-
 #include <Arduino.h>
 #include <FS.h>
 #include <WiFiManager.h>  // https://github.com/tzapu/WiFiManager
@@ -14,7 +9,7 @@
 #include <TickTwo.h>
 
 //******************************** Configulation ****************************//
-// #define _DEBUG_  // Comment this line if you don't want to debug
+#define _DEBUG_  // Comment this line if you don't want to debug
 #include "Debug.h"
 
 //******************************** Variables & Objects **********************//
@@ -147,7 +142,7 @@ void saveParamsCallback() {
     if (serializeJson(doc, file) == 0) {
         _delnF("Failed to write to file");
     } else {
-        _deVarln("The configuration has been saved to ", filename);
+        _delnF("Configuration saved successfully");
     }
 
     file.close();  // Close the file
@@ -163,18 +158,21 @@ void printFile(fs::FS& fs, const char* filename) {
         return;
     }
 
-    // Extract each characters by one by one
-    while (file.available()) {
-        Serial.print((char)file.read());
+    JsonDocument         doc;
+    DeserializationError error = deserializeJson(doc, file);
+    if (error) {
+        _delnF("Failed to read file");
     }
-    Serial.println();
 
-    file.close();  // Close the file
+    char buffer[512];
+    serializeJsonPretty(doc, buffer);
+    _delnF(buffer);
+
+    file.close();
 }
 
 void deleteFile(fs::FS& fs, const char* path) {
     _deVarln("Delete file: ", path);
-
     if (fs.remove(path)) {
         _delnF("- file deleted");
     } else {
@@ -197,8 +195,10 @@ void wifiManagerSetup() {
     wifiManager.addParameter(&customMqttPass);
 
     wifiManager.setDarkMode(true);
+#ifndef _DEBUG_
+    wifiManager.setDebugOutput(true, WM_DEBUG_SILENT);
+#endif
     wifiManager.setConfigPortalBlocking(false);
-    // wifiManager.setConfigPortalTimeout(60);
     wifiManager.setSaveParamsCallback(saveParamsCallback);
 
     _delnF("Print config file...");
@@ -225,12 +225,15 @@ void publishMqtt() {
 
 //----------------- Connect MQTT --------------//
 void reconnectMqtt() {
-    if (WiFi.status() == WL_CONNECTED) {  //
+    if (WiFi.status() == WL_CONNECTED) {
+        _deVar("MQTT Broker: ", mqttBroker);
+        _deVar(" | Port: ", mqttPort);
+        _deVar(" | User: ", mqttUser);
+        _deVarln(" | Pass: ", mqttPass);
         _deF("Connecting MQTT... ");
-
         if (mqtt.connect(deviceName, mqttUser, mqttPass)) {
-            tReconnectMqtt.stop();  //
-            _delnF("Connected");    //
+            tReconnectMqtt.stop();
+            _delnF("Connected");
             tConnectMqtt.interval(0);
             tConnectMqtt.start();
             statusLed.blinkNumberOfTimes(200, 200, 3);  // 250ms ON, 750ms OFF, repeat 3 times, blink immediately
@@ -239,7 +242,6 @@ void reconnectMqtt() {
         } else {  //
             _deVar("failed state: ", mqtt.state());
             _deVarln(" | counter: ", tReconnectMqtt.counter());
-
             if (tReconnectMqtt.counter() >= 3) {
                 tReconnectMqtt.stop();
                 tConnectMqtt.interval(60 * 1000);  // Wait 1 minute before reconnecting.
@@ -247,8 +249,8 @@ void reconnectMqtt() {
             }
         }
     } else {
-        if (tReconnectMqtt.counter() <= 1) {  //
-            _delnF("WiFi is not connected");  //
+        if (tReconnectMqtt.counter() <= 1) {
+            _delnF("WiFi is not connected");
         }
     }
 }
@@ -268,7 +270,7 @@ void resetWifiBtPressed(Button2& btn) {
     _delnF("Deleting the config file and resetting WiFi.");
     deleteFile(LittleFS, filename);
     wifiManager.resetSettings();
-    _de(deviceName);
+    _deF(deviceName);
     _delnF(" is restarting.");
     delay(3000);
     ESP.restart();
