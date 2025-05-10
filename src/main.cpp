@@ -12,6 +12,8 @@
 #define _DEBUG_  // Comment this line if you don't want to debug
 #include "Debug.h"
 
+// #define CUSTOM_IP // Uncomment this line if you want to use DHCP
+
 //******************************** Variables & Objects **********************//
 #define FORMAT_LITTLEFS_IF_FAILED true
 
@@ -28,12 +30,13 @@ Button2 resetWifiBt;
 //----------------- WiFi Manager --------------//
 const char* filename = "/config.txt";  // Config file name
 
+#ifdef CUSTOM_IP
 // default custom static IP
 char static_ip[16]  = "192.168.0.191";
 char static_gw[16]  = "192.168.0.1";
 char static_sn[16]  = "255.255.255.0";
 char static_dns[16] = "1.1.1.1";
-
+#endif
 char mqttBroker[16] = "192.168.0.10";
 char mqttPort[6]    = "1883";
 char mqttUser[10];
@@ -62,6 +65,7 @@ TickTwo tReconnectMqtt(reconnectMqtt, 3000, 0, MILLIS);
 //----------------- LittleFS ------------------//
 // Loads the configuration from a file
 void loadConfiguration(fs::FS& fs, const char* filename) {
+    _delnF("Loading configuration");
     // Open file for reading
     File file = fs.open(filename, "r");
     if (!file) {
@@ -84,6 +88,7 @@ void loadConfiguration(fs::FS& fs, const char* filename) {
     strlcpy(mqttPass, doc["mqttPass"], sizeof(mqttPass));
     mqttParameter = doc["mqttParameter"];
 
+#ifdef CUSTOM_IP
     if (doc["ip"]) {
         strlcpy(static_ip, doc["ip"], sizeof(static_ip));
         strlcpy(static_gw, doc["gateway"], sizeof(static_gw));
@@ -92,6 +97,7 @@ void loadConfiguration(fs::FS& fs, const char* filename) {
     } else {
         _delnF("No custom IP in config file");
     }
+#endif
 
     file.close();
 }
@@ -152,12 +158,12 @@ void saveParamsCallback() {
         doc["mqttParameter"] = true;
         mqttParameter        = doc["mqttParameter"];
     }
-
+#ifdef CUSTOM_IP
     doc["ip"]      = WiFi.localIP().toString();
     doc["gateway"] = WiFi.gatewayIP().toString();
     doc["subnet"]  = WiFi.subnetMask().toString();
     doc["dns"]     = WiFi.dnsIP().toString();
-
+#endif
     // Serialize JSON to file
     if (serializeJson(doc, file) == 0) {
         _delnF("Failed to write to file");
@@ -171,7 +177,7 @@ void saveParamsCallback() {
 }
 
 void printFile(fs::FS& fs, const char* filename) {
-    // Open file for reading
+    _delnF("Print config file...");
     File file = fs.open(filename, "r");
     if (!file) {
         _delnF("Failed to open data file");
@@ -201,15 +207,15 @@ void deleteFile(fs::FS& fs, const char* path) {
 }
 
 void wifiManagerSetup() {
-    _delnF("Loading configuration...");
-
     loadConfiguration(LittleFS, filename);
-
-    // WiFi.mode(WIFI_STA);  // explicitly set mode, esp defaults to STA+AP
+#ifdef _DEBUG_
+    printFile(LittleFS, filename);
+#endif
 
     // reset settings - wipe credentials for testing
     // wifiManager.resetSettings();
 
+#ifdef CUSTOM_IP
     // set static ip
     IPAddress _ip, _gw, _sn, _dns;
     _ip.fromString(static_ip);
@@ -217,6 +223,7 @@ void wifiManagerSetup() {
     _sn.fromString(static_sn);
     _dns.fromString(static_dns);
     wifiManager.setSTAStaticIPConfig(_ip, _gw, _sn, _dns);
+#endif
 
     wifiManager.addParameter(&customMqttBroker);
     wifiManager.addParameter(&customMqttPort);
@@ -227,11 +234,11 @@ void wifiManagerSetup() {
 #ifndef _DEBUG_
     wifiManager.setDebugOutput(true, WM_DEBUG_SILENT);
 #endif
+    // wifiManager.setDebugOutput(true, WM_DEBUG_DEV);
+    // wifiManager.setMinimumSignalQuality(20); // Default: 8%
+    // wifiManager.setConfigPortalTimeout(60);
     wifiManager.setConfigPortalBlocking(false);
     wifiManager.setSaveParamsCallback(saveParamsCallback);
-
-    _delnF("Print config file...");
-    printFile(LittleFS, filename);
 
     // automatically connect using saved credentials if they exist
     // If connection fails it starts an access point with the specified name
