@@ -28,6 +28,12 @@ Button2 resetWifiBt;
 //----------------- WiFi Manager --------------//
 const char* filename = "/config.txt";  // Config file name
 
+// default custom static IP
+char static_ip[16]  = "192.168.0.191";
+char static_gw[16]  = "192.168.0.1";
+char static_sn[16]  = "255.255.255.0";
+char static_dns[16] = "1.1.1.1";
+
 char mqttBroker[16] = "192.168.0.10";
 char mqttPort[6]    = "1883";
 char mqttUser[10];
@@ -77,6 +83,15 @@ void loadConfiguration(fs::FS& fs, const char* filename) {
     strlcpy(mqttUser, doc["mqttUser"], sizeof(mqttUser));
     strlcpy(mqttPass, doc["mqttPass"], sizeof(mqttPass));
     mqttParameter = doc["mqttParameter"];
+
+    if (doc["ip"]) {
+        strlcpy(static_ip, doc["ip"], sizeof(static_ip));
+        strlcpy(static_gw, doc["gateway"], sizeof(static_gw));
+        strlcpy(static_sn, doc["subnet"], sizeof(static_sn));
+        strlcpy(static_dns, doc["dns"], sizeof(static_dns));
+    } else {
+        _delnF("No custom IP in config file");
+    }
 
     file.close();
 }
@@ -138,6 +153,11 @@ void saveParamsCallback() {
         mqttParameter        = doc["mqttParameter"];
     }
 
+    doc["ip"]      = WiFi.localIP().toString();
+    doc["gateway"] = WiFi.gatewayIP().toString();
+    doc["subnet"]  = WiFi.subnetMask().toString();
+    doc["dns"]     = WiFi.dnsIP().toString();
+
     // Serialize JSON to file
     if (serializeJson(doc, file) == 0) {
         _delnF("Failed to write to file");
@@ -189,6 +209,15 @@ void wifiManagerSetup() {
 
     // reset settings - wipe credentials for testing
     // wifiManager.resetSettings();
+
+    // set static ip
+    IPAddress _ip, _gw, _sn, _dns;
+    _ip.fromString(static_ip);
+    _gw.fromString(static_gw);
+    _sn.fromString(static_sn);
+    _dns.fromString(static_dns);
+    wifiManager.setSTAStaticIPConfig(_ip, _gw, _sn, _dns);
+
     wifiManager.addParameter(&customMqttBroker);
     wifiManager.addParameter(&customMqttPort);
     wifiManager.addParameter(&customMqttUser);
