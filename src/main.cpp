@@ -56,7 +56,7 @@ TickTwo tReconnectMqtt(reconnectMqtt, 3000, 0, MILLIS);
 //----------------- LittleFS ------------------//
 // Loads the configuration from a file
 void loadConfiguration(fs::FS& fs, const char* filename) {
-    // Open file for reading
+    _delnF("Loading configuration");
     File file = fs.open(filename, "r");
     if (!file) {
         _delnF("Failed to open data file");
@@ -198,6 +198,9 @@ void wifiManagerSetup() {
 #ifndef _DEBUG_
     wifiManager.setDebugOutput(true, WM_DEBUG_SILENT);
 #endif
+    // wifiManager.setDebugOutput(true, WM_DEBUG_DEV);
+    // wifiManager.setMinimumSignalQuality(20); // Default: 8%
+    // wifiManager.setConfigPortalTimeout(60);
     wifiManager.setConfigPortalBlocking(false);
     wifiManager.setSaveParamsCallback(saveParamsCallback);
 
