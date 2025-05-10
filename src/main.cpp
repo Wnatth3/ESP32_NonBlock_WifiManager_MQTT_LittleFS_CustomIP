@@ -147,7 +147,7 @@ void saveParamsCallback() {
     if (serializeJson(doc, file) == 0) {
         _delnF("Failed to write to file");
     } else {
-        _delnF("Configuration saved successfully");
+        _deVarln("The configuration has been saved to ", filename);
     }
 
     file.close();  // Close the file
@@ -198,6 +198,7 @@ void wifiManagerSetup() {
 
     wifiManager.setDarkMode(true);
     wifiManager.setConfigPortalBlocking(false);
+    // wifiManager.setConfigPortalTimeout(60);
     wifiManager.setSaveParamsCallback(saveParamsCallback);
 
     _delnF("Print config file...");
