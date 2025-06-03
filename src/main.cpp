@@ -6,15 +6,18 @@
 #include <PubSubClient.h>
 #include <Button2.h>
 #include <ezLED.h>
-#include <TickTwo.h>
+#include <TaskScheduler.h>
 
 //******************************** Configulation ****************************//
 #define _DEBUG_  // Comment this line if you don't want to debug
 #include "Debug.h"
 
-// #define CUSTOM_IP // Uncomment this line if you want to use DHCP
+// #define CUSTOM_IP  // Uncomment this line if you want to use DHCP
 
 //******************************** Variables & Objects **********************//
+//----------------- TaskScheduler ------------------//
+Scheduler ts;
+
 #define FORMAT_LITTLEFS_IF_FAILED true
 
 #define deviceName "MyESP32"
@@ -56,10 +59,9 @@ WiFiClient   espClient;
 PubSubClient mqtt(espClient);
 
 //******************************** Tasks ************************************//
-void    connectMqtt();
-void    reconnectMqtt();
-TickTwo tConnectMqtt(connectMqtt, 0, 0, MILLIS);  // (function, interval, iteration, interval unit)
-TickTwo tReconnectMqtt(reconnectMqtt, 3000, 0, MILLIS);
+void connectMqtt();
+void reconnectMqtt();
+Task tMqttConnection(TASK_IMMEDIATE, TASK_FOREVER, &connectMqtt, &ts, true);
 
 //******************************** Functions ********************************//
 //----------------- LittleFS ------------------//
@@ -120,12 +122,12 @@ void handleMqttMessage(char* topic, byte* payload, unsigned int length) {
 void mqttInit() {
     _deF("MQTT parameters are ");
     if (mqttParameter) {
-        _delnF(" available");
+        _delnF("available");
         mqtt.setCallback(handleMqttMessage);
         mqtt.setServer(mqttBroker, atoi(mqttPort));
-        tConnectMqtt.start();
+        // tConnectMqtt.start();
     } else {
-        _delnF(" not available.");
+        _delnF("not available.");
     }
 }
 
@@ -236,7 +238,8 @@ void wifiManagerSetup() {
 #endif
     // wifiManager.setDebugOutput(true, WM_DEBUG_DEV);
     // wifiManager.setMinimumSignalQuality(20); // Default: 8%
-    // wifiManager.setConfigPortalTimeout(60);
+    wifiManager.setConnectTimeout(10); 
+    wifiManager.setConfigPortalTimeout(60);
     wifiManager.setConfigPortalBlocking(false);
     wifiManager.setSaveParamsCallback(saveParamsCallback);
 
@@ -267,25 +270,37 @@ void reconnectMqtt() {
         _deVar(" | User: ", mqttUser);
         _deVarln(" | Pass: ", mqttPass);
         _deF("Connecting MQTT... ");
+        static uint8_t counter = 0;
         if (mqtt.connect(deviceName, mqttUser, mqttPass)) {
-            tReconnectMqtt.stop();
+            // tReconnectMqtt.stop();
             _delnF("Connected");
-            tConnectMqtt.interval(0);
-            tConnectMqtt.start();
+            // tConnectMqtt.interval(0);
+            // tConnectMqtt.start();
+            tMqttConnection.setCallback(&connectMqtt);
+            tMqttConnection.setInterval(0);
             statusLed.blinkNumberOfTimes(200, 200, 3);  // 250ms ON, 750ms OFF, repeat 3 times, blink immediately
             subscribeMqtt();
             publishMqtt();
         } else {  //
+            counter++;
             _deVar("failed state: ", mqtt.state());
-            _deVarln(" | counter: ", tReconnectMqtt.counter());
-            if (tReconnectMqtt.counter() >= 3) {
-                tReconnectMqtt.stop();
-                tConnectMqtt.interval(60 * 1000);  // Wait 1 minute before reconnecting.
-                tConnectMqtt.start();
+            // _deVarln(" | counter: ", tReconnectMqtt.counter());
+            _deVarln(" | counter: ", counter);
+            // if (tReconnectMqtt.counter() >= 3) {
+            if (counter > 3) {
+                counter = 0;
+                // tReconnectMqtt.stop();
+                // tConnectMqtt.interval(60 * 1000);  // Wait 1 minute before reconnecting.
+                // tConnectMqtt.start();
+                tMqttConnection.setCallback(&connectMqtt);
+                tMqttConnection.setInterval(60 * TASK_SECOND);  // Wait 1 minute before reconnecting.
             }
         }
     } else {
-        if (tReconnectMqtt.counter() <= 1) {
+        static bool notConnectWifi = true;
+        // if (tReconnectMqtt.counter() <= 1) {
+        if (notConnectWifi) {
+            notConnectWifi = false;
             _delnF("WiFi is not connected");
         }
     }
@@ -293,8 +308,8 @@ void reconnectMqtt() {
 
 void connectMqtt() {
     if (!mqtt.connected()) {
-        tConnectMqtt.stop();
-        tReconnectMqtt.start();
+        tMqttConnection.setCallback(&reconnectMqtt);
+        tMqttConnection.setInterval(3 * TASK_SECOND);
     } else {
         mqtt.loop();
     }
@@ -332,6 +347,5 @@ void loop() {
     wifiManager.process();
     statusLed.loop();
     resetWifiBt.loop();
-    tConnectMqtt.update();
-    tReconnectMqtt.update();
+    ts.execute();
 }
