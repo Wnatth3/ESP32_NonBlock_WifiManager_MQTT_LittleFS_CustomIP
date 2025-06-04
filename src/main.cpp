@@ -61,7 +61,9 @@ PubSubClient mqtt(espClient);
 //******************************** Tasks ************************************//
 void connectMqtt();
 void reconnectMqtt();
-Task tMqttConnection(TASK_IMMEDIATE, TASK_FOREVER, &connectMqtt, &ts, true);
+Task tConnectMqtt(TASK_IMMEDIATE, TASK_FOREVER, &connectMqtt, &ts, true);
+Task tReconnectMqtt(3000, TASK_FOREVER, &reconnectMqtt, &ts, false);
+// Task tWifi(TASK_IMMEDIATE, TASK_FOREVER, [](){ wifiManager.process(); }, &ts, false);
 
 //******************************** Functions ********************************//
 //----------------- LittleFS ------------------//
@@ -238,7 +240,7 @@ void wifiManagerSetup() {
 #endif
     // wifiManager.setDebugOutput(true, WM_DEBUG_DEV);
     // wifiManager.setMinimumSignalQuality(20); // Default: 8%
-    wifiManager.setConnectTimeout(10); 
+    wifiManager.setConnectTimeout(10);
     wifiManager.setConfigPortalTimeout(60);
     wifiManager.setConfigPortalBlocking(false);
     wifiManager.setSaveParamsCallback(saveParamsCallback);
@@ -270,37 +272,24 @@ void reconnectMqtt() {
         _deVar(" | User: ", mqttUser);
         _deVarln(" | Pass: ", mqttPass);
         _deF("Connecting MQTT... ");
-        static uint8_t counter = 0;
         if (mqtt.connect(deviceName, mqttUser, mqttPass)) {
-            // tReconnectMqtt.stop();
             _delnF("Connected");
-            // tConnectMqtt.interval(0);
-            // tConnectMqtt.start();
-            tMqttConnection.setCallback(&connectMqtt);
-            tMqttConnection.setInterval(0);
+            tReconnectMqtt.disable();
+            tConnectMqtt.enable();
             statusLed.blinkNumberOfTimes(200, 200, 3);  // 250ms ON, 750ms OFF, repeat 3 times, blink immediately
             subscribeMqtt();
             publishMqtt();
         } else {  //
-            counter++;
             _deVar("failed state: ", mqtt.state());
-            // _deVarln(" | counter: ", tReconnectMqtt.counter());
-            _deVarln(" | counter: ", counter);
-            // if (tReconnectMqtt.counter() >= 3) {
-            if (counter > 3) {
-                counter = 0;
-                // tReconnectMqtt.stop();
-                // tConnectMqtt.interval(60 * 1000);  // Wait 1 minute before reconnecting.
-                // tConnectMqtt.start();
-                tMqttConnection.setCallback(&connectMqtt);
-                tMqttConnection.setInterval(60 * TASK_SECOND);  // Wait 1 minute before reconnecting.
+            _deVarln(" | counter: ", tReconnectMqtt.getRunCounter());
+            if (tReconnectMqtt.getRunCounter() > 3) {
+                tReconnectMqtt.disable();
+                tConnectMqtt.setInterval(60000L);  // Wait 60 seconds before reconnecting.
+                tConnectMqtt.enableDelayed();
             }
         }
     } else {
-        static bool notConnectWifi = true;
-        // if (tReconnectMqtt.counter() <= 1) {
-        if (notConnectWifi) {
-            notConnectWifi = false;
+        if (tReconnectMqtt.isFirstIteration()) {
             _delnF("WiFi is not connected");
         }
     }
@@ -308,8 +297,8 @@ void reconnectMqtt() {
 
 void connectMqtt() {
     if (!mqtt.connected()) {
-        tMqttConnection.setCallback(&reconnectMqtt);
-        tMqttConnection.setInterval(3 * TASK_SECOND);
+        tConnectMqtt.disable();
+        tReconnectMqtt.enable();
     } else {
         mqtt.loop();
     }
