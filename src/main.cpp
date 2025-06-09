@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include <FS.h>
 #include <WiFiManager.h>  // https://github.com/tzapu/WiFiManager
@@ -61,9 +62,9 @@ PubSubClient mqtt(espClient);
 //******************************** Tasks ************************************//
 void connectMqtt();
 void reconnectMqtt();
+Task tWifiManager(TASK_IMMEDIATE, TASK_FOREVER, []() { wifiManager.process(); }, &ts, true);  // Insert the process() into the task scheduler
 Task tConnectMqtt(TASK_IMMEDIATE, TASK_FOREVER, &connectMqtt, &ts, true);
 Task tReconnectMqtt(3000, TASK_FOREVER, &reconnectMqtt, &ts, false);
-// Task tWifi(TASK_IMMEDIATE, TASK_FOREVER, [](){ wifiManager.process(); }, &ts, false);
 
 //******************************** Functions ********************************//
 //----------------- LittleFS ------------------//
@@ -81,9 +82,7 @@ void loadConfiguration(fs::FS& fs, const char* filename) {
     JsonDocument doc;
     // Deserialize the JSON document
     DeserializationError error = deserializeJson(doc, file);
-    if (error) {
-        _delnF("Failed to read file, using default configuration");
-    }
+    if (error) { _delnF("Failed to read file, using default configuration"); }
     // Copy values from the JsonDocument to the Config
     // strlcpy(Destination_Variable, doc["Source_Variable"] /*| "Default_Value"*/, sizeof(Destination_Name));
     strlcpy(mqttBroker, doc["mqttBroker"], sizeof(mqttBroker));
@@ -333,8 +332,8 @@ void setup() {
 }
 
 void loop() {
-    wifiManager.process();
+    // wifiManager.process();
+    ts.execute();
     statusLed.loop();
     resetWifiBt.loop();
-    ts.execute();
 }
