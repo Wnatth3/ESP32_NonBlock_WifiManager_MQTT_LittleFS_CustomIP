@@ -6,13 +6,13 @@ ESP32 Non-Blocking WiFiManager + MQTT + LittleFS + Custom IP
 - Arduino IDE or PlatformIO
 - Install the following libraries:
     - [WiFiManager by tzapu](https://github.com/tzapu/WiFiManager)
-    - [LittleFS_esp32](https://github.com/lorol/LITTLEFS)
+    - LittleFS
     - [ArduinoJson](https://arduinojson.org/)
     - [PubSubClient](https://github.com/knolleary/pubsubclient)
     - [Button2](https://github.com/LennartHennigs/Button2)
     - [ezLED](https://github.com/raphaelbs/ezLED)
-    - [TickTwo](https://github.com/RobTillaart/TickTwo)
-- ESP32 LittleFS filesystem uploaded (use Tools > ESP32 Sketch Data Upload)
+    - [TickTwo](https://github.com/RobTillaart/TickTwo) 
+    
 
 ## Features
 
