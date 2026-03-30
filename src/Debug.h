@@ -8,11 +8,11 @@
 #define _deF(...)         Serial.print(F(__VA_ARGS__))
 #define _delnF(...)       Serial.println(F(__VA_ARGS__))  // printing text using the F macro
 #define _deVar(label, value) \
-    Serial.print(F(label));  \
-    Serial.print(value);
+  Serial.print(F(label));  \
+  Serial.print(value);
 #define _deVarln(...)    \
-    _deVar(__VA_ARGS__); \
-    Serial.println();
+  _deVar(__VA_ARGS__); \
+  Serial.println();
 #else
 #define _serialBegin(...)
 #define _de(...)
