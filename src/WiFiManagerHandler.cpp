@@ -37,7 +37,8 @@ void WiFiManagerHandler::begin() {
   _loadConfig();
 
 #ifdef _DEBUG_
-  _printConfig();
+  File file = LittleFS.open(CONFIG_FILENAME, "r");
+  if (file) _printConfig();
 #endif
 
 #ifdef CUSTOM_IP

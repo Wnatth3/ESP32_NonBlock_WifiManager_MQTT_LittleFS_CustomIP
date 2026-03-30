@@ -17,7 +17,7 @@
 #define CONFIG_FILENAME "/config.txt"
 
 // ─── Static IP support ──────────────────────────────────────────────────────
-#define CUSTOM_IP
+// #define CUSTOM_IP // Comment out to enable DHCP
 
 class WiFiManagerHandler {
 public:
