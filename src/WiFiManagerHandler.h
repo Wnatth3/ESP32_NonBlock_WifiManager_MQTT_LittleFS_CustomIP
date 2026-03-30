@@ -7,10 +7,10 @@
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
 
-//******************************** Configulation ****************************//
-#define _DEBUG_
+#define _DEBUG_  // Comment out to disable all debug output
 #include "Debug.h"
 
+//******************************** Configulation ****************************//
 #define FORMAT_LITTLEFS_IF_FAILED true
 
 // ─── Config file ────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@
 // #define CUSTOM_IP // Comment out to enable DHCP
 
 class WiFiManagerHandler {
-public:
+ public:
   // ── Constructor ────────────────────────────────────────────────────────────
   WiFiManagerHandler(const char* deviceName, const char* apPassword);
 
@@ -33,20 +33,20 @@ public:
   void process();
 
   // ── Config access ──────────────────────────────────────────────────────────
-  const char* getMqttBroker()  const { return _mqttBroker; }
-  const char* getMqttPort()    const { return _mqttPort; }
-  const char* getMqttUser()    const { return _mqttUser; }
-  const char* getMqttPass()    const { return _mqttPass; }
-  bool        hasMqttParams()  const { return _mqttParameter; }
+  const char* getMqttBroker() const { return _mqttBroker; }
+  const char* getMqttPort() const { return _mqttPort; }
+  const char* getMqttUser() const { return _mqttUser; }
+  const char* getMqttPass() const { return _mqttPass; }
+  bool        hasMqttParams() const { return _mqttParameter; }
 
   // ── Utilities ──────────────────────────────────────────────────────────────
-  void resetAndRestart();   // Wipes config file + WiFi credentials, then reboots
+  void resetAndRestart();  // Wipes config file + WiFi credentials, then reboots
 
   // ── Callback hook ──────────────────────────────────────────────────────────
   /** Optional: called after new params are saved from the portal. */
   void setOnParamsSaved(std::function<void()> cb) { _onParamsSaved = cb; }
 
-private:
+ private:
   // ── Portal parameters ──────────────────────────────────────────────────────
   WiFiManager          _wm;
   WiFiManagerParameter _paramBroker;
@@ -82,5 +82,5 @@ private:
 
   /** Static trampoline so WiFiManager can call our member saveParamsCallback. */
   static WiFiManagerHandler* _instance;
-  static void _saveParamsTrampoline();
+  static void                _saveParamsTrampoline();
 };

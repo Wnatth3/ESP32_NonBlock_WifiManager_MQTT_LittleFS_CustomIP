@@ -7,24 +7,22 @@ WiFiManagerHandler* WiFiManagerHandler::_instance = nullptr;
 //  Constructor
 // ────────────────────────────────────────────────────────────────────────────
 WiFiManagerHandler::WiFiManagerHandler(const char* deviceName, const char* apPassword)
-  : _deviceName(deviceName)
-  , _apPassword(apPassword)
-  , _paramBroker("broker", "mqtt server",  _mqttBroker, 16)
-  , _paramPort  ("port",   "mqtt port",    _mqttPort,   6)
-  , _paramUser  ("user",   "mqtt user",    _mqttUser,   10)
-  , _paramPass  ("pass",   "mqtt pass",    _mqttPass,   10)
-{
+    : _deviceName(deviceName), _apPassword(apPassword)
+    , _paramBroker("broker", "mqtt server", _mqttBroker, 16)
+    , _paramPort("port", "mqtt port", _mqttPort, 6)
+    , _paramUser("user", "mqtt user", _mqttUser, 10)
+    , _paramPass("pass", "mqtt pass", _mqttPass, 10) {
   // Default values
-  strlcpy(_mqttBroker, "192.168.0.10",  sizeof(_mqttBroker));
-  strlcpy(_mqttPort,   "1883",          sizeof(_mqttPort));
+  strlcpy(_mqttBroker, "192.168.0.10", sizeof(_mqttBroker));
+  strlcpy(_mqttPort, "1883", sizeof(_mqttPort));
   _mqttUser[0] = '\0';
   _mqttPass[0] = '\0';
 
 #ifdef CUSTOM_IP
-  strlcpy(_static_ip,  "192.168.0.191",  sizeof(_static_ip));
-  strlcpy(_static_gw,  "192.168.0.1",    sizeof(_static_gw));
-  strlcpy(_static_sn,  "255.255.255.0",  sizeof(_static_sn));
-  strlcpy(_static_dns, "1.1.1.1",        sizeof(_static_dns));
+  strlcpy(_static_ip, "192.168.0.191", sizeof(_static_ip));
+  strlcpy(_static_gw, "192.168.0.1", sizeof(_static_gw));
+  strlcpy(_static_sn, "255.255.255.0", sizeof(_static_sn));
+  strlcpy(_static_dns, "1.1.1.1", sizeof(_static_dns));
 #endif
 
   _instance = this;  // Register singleton for trampoline
@@ -99,7 +97,7 @@ void WiFiManagerHandler::_loadConfig() {
     return;
   }
 
-  JsonDocument doc;
+  JsonDocument         doc;
   DeserializationError err = deserializeJson(doc, file);
   file.close();
 
@@ -109,17 +107,17 @@ void WiFiManagerHandler::_loadConfig() {
   }
 
   if (doc["mqttBroker"]) strlcpy(_mqttBroker, doc["mqttBroker"], sizeof(_mqttBroker));
-  if (doc["mqttPort"])   strlcpy(_mqttPort,   doc["mqttPort"],   sizeof(_mqttPort));
-  if (doc["mqttUser"])   strlcpy(_mqttUser,   doc["mqttUser"],   sizeof(_mqttUser));
-  if (doc["mqttPass"])   strlcpy(_mqttPass,   doc["mqttPass"],   sizeof(_mqttPass));
+  if (doc["mqttPort"]) strlcpy(_mqttPort, doc["mqttPort"], sizeof(_mqttPort));
+  if (doc["mqttUser"]) strlcpy(_mqttUser, doc["mqttUser"], sizeof(_mqttUser));
+  if (doc["mqttPass"]) strlcpy(_mqttPass, doc["mqttPass"], sizeof(_mqttPass));
   _mqttParameter = doc["mqttParameter"] | false;
 
 #ifdef CUSTOM_IP
   if (doc["ip"]) {
-    strlcpy(_static_ip,  doc["ip"],      sizeof(_static_ip));
-    strlcpy(_static_gw,  doc["gateway"], sizeof(_static_gw));
-    strlcpy(_static_sn,  doc["subnet"],  sizeof(_static_sn));
-    strlcpy(_static_dns, doc["dns"],     sizeof(_static_dns));
+    strlcpy(_static_ip, doc["ip"], sizeof(_static_ip));
+    strlcpy(_static_gw, doc["gateway"], sizeof(_static_gw));
+    strlcpy(_static_sn, doc["subnet"], sizeof(_static_sn));
+    strlcpy(_static_dns, doc["dns"], sizeof(_static_dns));
   } else {
     _delnF("No custom IP in config – using defaults");
   }
@@ -132,9 +130,9 @@ void WiFiManagerHandler::_loadConfig() {
 void WiFiManagerHandler::_saveConfig() {
   // Pull updated values from the portal form fields
   strlcpy(_mqttBroker, _paramBroker.getValue(), sizeof(_mqttBroker));
-  strlcpy(_mqttPort,   _paramPort.getValue(),   sizeof(_mqttPort));
-  strlcpy(_mqttUser,   _paramUser.getValue(),   sizeof(_mqttUser));
-  strlcpy(_mqttPass,   _paramPass.getValue(),   sizeof(_mqttPass));
+  strlcpy(_mqttPort, _paramPort.getValue(), sizeof(_mqttPort));
+  strlcpy(_mqttUser, _paramUser.getValue(), sizeof(_mqttUser));
+  strlcpy(_mqttPass, _paramPass.getValue(), sizeof(_mqttPass));
 
   _delnF("Saving configuration to file");
 
@@ -152,7 +150,7 @@ void WiFiManagerHandler::_saveConfig() {
 
   if (strlen(_mqttBroker) > 0) {
     doc["mqttParameter"] = true;
-    _mqttParameter = true;
+    _mqttParameter       = true;
   }
 
 #ifdef CUSTOM_IP
@@ -183,7 +181,7 @@ void WiFiManagerHandler::_printConfig() {
     return;
   }
 
-  JsonDocument doc;
+  JsonDocument         doc;
   DeserializationError err = deserializeJson(doc, file);
   file.close();
 
