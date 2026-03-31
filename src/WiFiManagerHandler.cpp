@@ -7,7 +7,8 @@ WiFiManagerHandler* WiFiManagerHandler::_instance = nullptr;
 //  Constructor
 // ────────────────────────────────────────────────────────────────────────────
 WiFiManagerHandler::WiFiManagerHandler(const char* deviceName, const char* apPassword)
-    : _deviceName(deviceName), _apPassword(apPassword)
+    : _deviceName(deviceName)
+    , _apPassword(apPassword)
     , _paramBroker("broker", "mqtt server", _mqttBroker, 16)
     , _paramPort("port", "mqtt port", _mqttPort, 6)
     , _paramUser("user", "mqtt user", _mqttUser, 10)
@@ -97,7 +98,7 @@ void WiFiManagerHandler::_loadConfig() {
     return;
   }
 
-  JsonDocument         doc;
+  JsonDocument doc;
   DeserializationError err = deserializeJson(doc, file);
   file.close();
 
@@ -181,7 +182,7 @@ void WiFiManagerHandler::_printConfig() {
     return;
   }
 
-  JsonDocument         doc;
+  JsonDocument doc;
   DeserializationError err = deserializeJson(doc, file);
   file.close();
 
@@ -226,8 +227,6 @@ void WiFiManagerHandler::_applyStaticIp() {
 void WiFiManagerHandler::_saveParamsTrampoline() {
   if (_instance) {
     _instance->_saveConfig();
-    if (_instance->_onParamsSaved) {
-      _instance->_onParamsSaved();
-    }
+    if (_instance->_onParamsSaved) { _instance->_onParamsSaved(); }
   }
 }

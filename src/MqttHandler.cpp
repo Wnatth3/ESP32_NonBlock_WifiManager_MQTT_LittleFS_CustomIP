@@ -6,16 +6,14 @@ MqttHandler* MqttHandler::_instance = nullptr;
 // ────────────────────────────────────────────────────────────────────────────
 //  Constructor
 // ────────────────────────────────────────────────────────────────────────────
-MqttHandler::MqttHandler(const char* deviceName)
-    : _deviceName(deviceName), _mqtt(_espClient) {
+MqttHandler::MqttHandler(const char* deviceName) : _deviceName(deviceName), _mqtt(_espClient) {
   _instance = this;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
 //  begin()
 // ────────────────────────────────────────────────────────────────────────────
-void MqttHandler::begin(const char* broker, uint16_t port,
-                        const char* user, const char* pass) {
+void MqttHandler::begin(const char* broker, uint16_t port, const char* user, const char* pass) {
   if (!broker || strlen(broker) == 0) {
     _delnF("MqttHandler: no broker address – skipping init");
     return;
@@ -76,9 +74,8 @@ void MqttHandler::_connect() {
 
   _deF("MqttHandler: connecting... ");
 
-  bool ok = (_user && strlen(_user) > 0)
-                ? _mqtt.connect(_deviceName, _user, _pass)
-                : _mqtt.connect(_deviceName);
+  bool ok = (_user && strlen(_user) > 0) ? _mqtt.connect(_deviceName, _user, _pass)
+                                         : _mqtt.connect(_deviceName);
 
   if (ok) {
     _delnF("connected");

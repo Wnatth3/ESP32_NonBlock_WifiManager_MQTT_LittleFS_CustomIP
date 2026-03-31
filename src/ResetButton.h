@@ -8,7 +8,7 @@
 #include "Debug.h"
 
 class ResetButton {
- public:
+public:
   // ── Constructor ────────────────────────────────────────────────────────────
 
   /**
@@ -25,13 +25,13 @@ class ResetButton {
   /** Fired when the button has been held for holdMs. */
   void setOnLongPress(std::function<void()> cb) { _onLongPress = cb; }
 
- private:
-  uint8_t  _pin;
+private:
+  uint8_t _pin;
   uint32_t _holdMs;
-  Button2  _btn;
+  Button2 _btn;
 
   std::function<void()> _onLongPress = nullptr;
 
   static ResetButton* _instance;
-  static void         _longPressTrampoline(Button2& b);
+  static void _longPressTrampoline(Button2& b);
 };

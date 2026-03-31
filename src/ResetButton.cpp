@@ -5,8 +5,7 @@ ResetButton* ResetButton::_instance = nullptr;
 // ────────────────────────────────────────────────────────────────────────────
 //  Constructor
 // ────────────────────────────────────────────────────────────────────────────
-ResetButton::ResetButton(uint8_t pin, uint32_t holdMs)
-    : _pin(pin), _holdMs(holdMs) {
+ResetButton::ResetButton(uint8_t pin, uint32_t holdMs) : _pin(pin), _holdMs(holdMs) {
   _instance = this;
 }
 
@@ -33,7 +32,5 @@ void ResetButton::loop() {
 //  Static trampoline
 // ────────────────────────────────────────────────────────────────────────────
 void ResetButton::_longPressTrampoline(Button2& /*b*/) {
-  if (_instance && _instance->_onLongPress) {
-    _instance->_onLongPress();
-  }
+  if (_instance && _instance->_onLongPress) { _instance->_onLongPress(); }
 }

@@ -12,8 +12,8 @@
 #include "ResetButton.h"
 
 //******************************** Config ***********************************//
-#define DEVICE_NAME   "MyESP32"
-#define AP_PASSWORD   "password"
+#define DEVICE_NAME "MyESP32"
+#define AP_PASSWORD "password"
 #define RESET_BTN_PIN 0
 #define RESET_HOLD_MS 5000
 
@@ -23,8 +23,8 @@ Scheduler ts;
 ezLED statusLed(LED_BUILTIN);
 
 WiFiManagerHandler wifiHandler(DEVICE_NAME, AP_PASSWORD);
-MqttHandler        mqttHandler(DEVICE_NAME);
-ResetButton        resetButton(RESET_BTN_PIN, RESET_HOLD_MS);
+MqttHandler mqttHandler(DEVICE_NAME);
+ResetButton resetButton(RESET_BTN_PIN, RESET_HOLD_MS);
 
 //******************************** Tasks ************************************//
 Task tWifiManager(TASK_IMMEDIATE, TASK_FOREVER, []() { wifiHandler.process(); }, &ts, true);
@@ -51,11 +51,8 @@ void initMqtt() {
 
   mqttHandler.setOnConnected(onMqttConnected);
   mqttHandler.setOnMessage(onMqttMessage);
-  mqttHandler.begin(
-      wifiHandler.getMqttBroker(),
-      atoi(wifiHandler.getMqttPort()),
-      wifiHandler.getMqttUser(),
-      wifiHandler.getMqttPass());
+  mqttHandler.begin(wifiHandler.getMqttBroker(), atoi(wifiHandler.getMqttPort()),
+                    wifiHandler.getMqttUser(), wifiHandler.getMqttPass());
 }
 
 //******************************** Setup & Loop *****************************//
