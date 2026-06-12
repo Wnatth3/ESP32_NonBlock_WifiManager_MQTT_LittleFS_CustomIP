@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 #include <TaskScheduler.h>
+#include <ArduinoJson.h>
 #include <ezLED.h>
 
 //******************************** Debug ************************************//
@@ -35,16 +36,26 @@ Task tResetButton(TASK_IMMEDIATE, TASK_FOREVER, []() { resetButton.loop(); }, &t
 //******************************** MQTT logic *******************************//
 void onMqttConnected() {
   statusLed.blinkNumberOfTimes(200, 200, 3);
-  // mqttHandler.subscribe("omg/OMG_ESP32_BLE/BTtoMQTT/A4C138C5BFA8");
+  mqttHandler.subscribe("omg/OMG_ESP32_BLE/BTtoMQTT/A4C138C5BFA8");
   // mqttHandler.publish("test/publish/topic", "Hello World!");
 }
 
-void onMqttMessage(const String& topic, const String& message) {
-  if (topic == "test/subscribe/topic") {
-    if (message == "aValue") {            /* Do something */
-    } else if (message == "otherValue") { /* Do something */
-    }
+void onMqttMessage(char* topic, byte* payload, unsigned int length) {
+  _def("Message arrived [ %s ]", topic);
+  //   for (int i = 0; i < length; i++) { _def("%c", (char)payload[i]); }
+  // _def("\n");
+
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, payload, length);
+  if (error) {
+    _def("JSON parse failed: %s\n", error.c_str());
+    return;
   }
+
+  float tempc = doc["tempc"] | 0.0f;
+  float hum   = doc["hum"] | 0.0f;
+
+  _def(" tempc: %.2f | hum: %.2f\n", tempc, hum);
 }
 
 void initMqtt() {

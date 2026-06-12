@@ -24,6 +24,7 @@ void MqttHandler::begin(const char* broker, uint16_t port, const char* user, con
 
   _mqtt.setCallback(_messageTrampoline);
   _mqtt.setServer(broker, port);
+  _mqtt.setBufferSize(512);  // default is 256 - may need to increase for larger messages
   _initialised = true;
 
   _deVar("MqttHandler: broker=", broker);
@@ -103,10 +104,5 @@ void MqttHandler::_connect() {
 void MqttHandler::_messageTrampoline(char* topic, byte* payload, unsigned int length) {
   if (!_instance || !_instance->_onMessage) return;
 
-  String t = topic;
-  String m;
-  m.reserve(length);
-  for (unsigned int i = 0; i < length; i++) m += (char)payload[i];
-
-  _instance->_onMessage(t, m);
+  _instance->_onMessage(topic, payload, length);
 }

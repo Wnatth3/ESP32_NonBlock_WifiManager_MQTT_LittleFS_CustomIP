@@ -10,7 +10,8 @@
 
 class MqttHandler {
 public:
-  using MessageCallback = std::function<void(const String& topic, const String& message)>;
+  // using MessageCallback = std::function<void(const String& topic, const String& message)>;
+  using MessageCallback = std::function<void(char* topic, byte* payload, unsigned int length)>;
 
   // ── Constructor ────────────────────────────────────────────────────────────
   MqttHandler(const char* deviceName);
