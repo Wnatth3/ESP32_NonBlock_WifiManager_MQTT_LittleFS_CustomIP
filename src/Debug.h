@@ -13,6 +13,7 @@
 #define _deVarln(...)  \
   _deVar(__VA_ARGS__); \
   Serial.println();
+#define _def(...) Serial.printf(__VA_ARGS__)
 #else
 #define _serialBegin(...)
 #define _de(...)
@@ -21,6 +22,7 @@
 #define _delnF(...)
 #define _deVar(...)
 #define _deVarln(...)
+#define _def(...)
 #endif
 
 #endif

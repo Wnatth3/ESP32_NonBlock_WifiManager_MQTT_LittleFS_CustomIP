@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <LittleFS.h>
-#include <ezLED.h>
 #include <TaskScheduler.h>
+#include <ezLED.h>
 
 //******************************** Debug ************************************//
 #define _DEBUG_  // Comment out to disable all debug output
@@ -28,13 +28,14 @@ ResetButton resetButton(RESET_BTN_PIN, RESET_HOLD_MS);
 
 //******************************** Tasks ************************************//
 Task tWifiManager(TASK_IMMEDIATE, TASK_FOREVER, []() { wifiHandler.process(); }, &ts, true);
-
 Task tMqtt(100, TASK_FOREVER, []() { mqttHandler.loop(); }, &ts, true);
+Task tStatusLed(TASK_IMMEDIATE, TASK_FOREVER, []() { statusLed.loop(); }, &ts, true);
+Task tResetButton(TASK_IMMEDIATE, TASK_FOREVER, []() { resetButton.loop(); }, &ts, true);
 
 //******************************** MQTT logic *******************************//
 void onMqttConnected() {
   statusLed.blinkNumberOfTimes(200, 200, 3);
-  // mqttHandler.subscribe("test/subscribe/topic");
+  // mqttHandler.subscribe("omg/OMG_ESP32_BLE/BTtoMQTT/A4C138C5BFA8");
   // mqttHandler.publish("test/publish/topic", "Hello World!");
 }
 
@@ -61,11 +62,12 @@ void setup() {
   statusLed.turnOFF();
 
   while (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
-    _delnF("LittleFS init failed – retrying");
+    _delnF("LittleFS init failed - retrying");
     delay(1000);
   }
 
   wifiHandler.setOnParamsSaved(initMqtt);
+  // wifiHandler.enableOTA();
   wifiHandler.begin();
   initMqtt();
 
@@ -78,6 +80,6 @@ void setup() {
 
 void loop() {
   ts.execute();
-  statusLed.loop();
-  resetButton.loop();
+  // statusLed.loop();
+  // resetButton.loop();
 }

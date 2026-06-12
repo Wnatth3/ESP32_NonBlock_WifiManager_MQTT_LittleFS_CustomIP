@@ -40,6 +40,10 @@ void WiFiManagerHandler::begin() {
   if (file) _printConfig();
 #endif
 
+#ifndef _DEBUG_
+  _wm.setDebugOutput(true, WM_DEBUG_SILENT);
+#endif
+
 #ifdef CUSTOM_IP
   _applyStaticIp();
 #endif
@@ -49,12 +53,20 @@ void WiFiManagerHandler::begin() {
   _wm.addParameter(&_paramUser);
   _wm.addParameter(&_paramPass);
 
+  _wm.setHttpPort(80);
+  // HTTPUpdateServer credentials are set internally by WiFiManager
+  // Lock the portal itself with:
+  // _wm.setAPStaticIPConfig(/*ip, gateway, subnet*/); // optional
+  // For portal password, AP password already covers access
+  std::vector<const char*> menu = { "wifi",  // Configure WiFi
+                                    "info",  // Board info
+                                    // "param",   // Custom parameters (MQTT etc.)
+                                    "update",  // ← OTA upload page
+                                    "sep",     // Separator
+                                    "restart", "erase", "exit" };
+  _wm.setMenu(menu);
+
   _wm.setDarkMode(true);
-
-#ifndef _DEBUG_
-  _wm.setDebugOutput(true, WM_DEBUG_SILENT);
-#endif
-
   _wm.setConnectTimeout(10);
   _wm.setConfigPortalTimeout(60);
   _wm.setConfigPortalBlocking(false);
@@ -230,3 +242,18 @@ void WiFiManagerHandler::_saveParamsTrampoline() {
     if (_instance->_onParamsSaved) { _instance->_onParamsSaved(); }
   }
 }
+
+// void WiFiManagerHandler::enableOTA() {
+//   _wm.setHttpPort(80);
+//   // HTTPUpdateServer credentials are set internally by WiFiManager
+//   // Lock the portal itself with:
+//   // _wm.setAPStaticIPConfig(/*ip, gateway, subnet*/); // optional
+//   // For portal password, AP password already covers access
+//   std::vector<const char*> menu = { "wifi",    // Configure WiFi
+//                                     "info",    // Board info
+//                                     "param",   // Custom parameters (MQTT etc.)
+//                                     "update",  // ← OTA upload page
+//                                     "sep",     // Separator
+//                                     "restart", "erase", "exit" };
+//   _wm.setMenu(menu);
+// }

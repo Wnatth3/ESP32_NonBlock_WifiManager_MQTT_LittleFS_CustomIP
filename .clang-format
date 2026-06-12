@@ -45,7 +45,7 @@ PointerAlignment:   Left   # const char*
 ReferenceAlignment: Left   # Button2&
 
 # ── Misc ─────────────────────────────────────────────────────────────────────
-Cpp11BracedListStyle:  true
+Cpp11BracedListStyle:  Block
 Standard:              c++17
 UseTab:                Never
 MaxEmptyLinesToKeep:   1

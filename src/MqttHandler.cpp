@@ -68,7 +68,7 @@ bool MqttHandler::subscribe(const char* topic) {
 // ────────────────────────────────────────────────────────────────────────────
 void MqttHandler::_connect() {
   if (WiFi.status() != WL_CONNECTED) {
-    _delnF("MqttHandler: WiFi not connected – skipping MQTT attempt");
+    _delnF("MqttHandler: WiFi not connected - skipping MQTT attempt");
     return;
   }
 

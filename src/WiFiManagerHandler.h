@@ -14,7 +14,7 @@
 #define FORMAT_LITTLEFS_IF_FAILED true
 
 // ─── Config file ────────────────────────────────────────────────────────────
-#define CONFIG_FILENAME "/config.txt"
+#define CONFIG_FILENAME "/networkConfig.txt"
 
 // ─── Static IP support ──────────────────────────────────────────────────────
 // #define CUSTOM_IP // Comment out to enable DHCP
@@ -26,11 +26,11 @@ public:
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
-  /** Call once inside setup() after LittleFS.begin(). */
-  void begin();
+  void begin(); /** Call once inside setup() after LittleFS.begin(). */
 
-  /** Call every loop iteration (non-blocking portal processing). */
-  void process();
+  void process(); /** Call every loop iteration (non-blocking portal processing). */
+
+  // void enableOTA();  // Call after begin() to show Update in the portal
 
   // ── Config access ──────────────────────────────────────────────────────────
   const char* getMqttBroker() const { return _mqttBroker; }
